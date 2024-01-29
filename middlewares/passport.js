@@ -1,5 +1,5 @@
 //\\ بسم الله الرحمن الرحيم //\\
-
+require("dotenv").config();
 const bcrypt = require("bcrypt");
 const User = require("../models/User"); //Don't forget to import User.
 //Tokens can be extracted from the request in many ways.
@@ -26,7 +26,7 @@ exports.jwtStrategy = new JWTStrategy(
     //options object. Also, we will pass our JWT_SECRET
     //for the key secretOrKey.
     jwtFromRequest: fromAuthHeaderAsBearerToken(),
-    secretOrKey: JWT_SECRET,
+    secretOrKey: process.env.JWT_SECRET,
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   },
   //Now the second argument, an asynchronous callback function,
@@ -38,7 +38,7 @@ exports.jwtStrategy = new JWTStrategy(
     //expiration date to the date right now. If the token is
     //expired, call done and pass it null and false as arguments,
     //which will throw a 401 error.
-    if (Date.now() > jwtPayload.exp) {
+    if (Date.now() / 1000 > jwtPayload.exp) {
       return done(null, false); // this will throw a 401
     }
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,8 +48,11 @@ exports.jwtStrategy = new JWTStrategy(
     //user to done. If no user is found, it will throw a 401 error.
 
     try {
-      const student = await Student.findById(jwtPayload.id);
-      done(null, student); // if there is no user, this will throw a 401
+      const user = await User.findById(jwtPayload.id);
+      if (!user) {
+        return done("USER NOT FOUND!");
+      }
+      done(null, user); // if there is no user, this will throw a 401
     } catch (error) {
       done(error);
     }

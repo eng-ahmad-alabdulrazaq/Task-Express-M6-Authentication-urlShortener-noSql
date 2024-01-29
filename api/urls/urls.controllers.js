@@ -12,9 +12,9 @@ exports.shorten = async (req, res) => {
   try {
     req.body.shortUrl = `${baseUrl}/${urlCode}`;
     req.body.urlCode = urlCode;
-    req.body.userId = req.user.userId; //use req.user instead of the route param.
+    req.body.userId = req.user._Id; //use req.user instead of the route param.
     const newUrl = await Url.create(req.body);
-    await User.findByIdAndUpdate(req.user.userId, {
+    await User.findByIdAndUpdate(req.user._id, {
       //use req.user instead of the route param.
       $push: { urls: newUrl._id },
     });
@@ -47,10 +47,18 @@ exports.deleteUrl = async (req, res) => {
   try {
     const url = await Url.findOne({ urlCode: req.params.code });
     if (url) {
-      await Url.findByIdAndDelete(url._id);
-      return res.status(201).json("Deleted");
+      //condition
+      if (url.userId.equals(req.user._id)) {
+        await url.deleteOne();
+        return res.status(204).end();
+      } else {
+        return res.status(401).json({ message: "YOU SHALL NOT PASS!" });
+      }
+      //condition
+      // await Url.findByIdAndDelete(url._id); //old
+      // return res.status(201).json("Deleted"); //old
     } else {
-      return res.status(404).json("No URL Found");
+      return res.status(404).json("NO URL FOUND!");
     }
   } catch (err) {
     next(err);
